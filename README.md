@@ -36,6 +36,24 @@ If you already had functions deployed in your namespace you can run the injectio
 $ kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
+#### Linkerd 2 and the Ingress Controller
+If you are using an ingress controller you need to do an extra step(if you are using a service type LoadBalancer for your gateway you can skip this).
+First we need to inject the linkerd proxy into the nginx ingress controller:
+```
+$ kubectl -n default get deploy <name of your ingress controller> -o yaml | linkerd inject - | kubectl apply -f -
+```
+Once your ingress controller is injected you will notice that you cannot access your gateway. This is because of the following:
+> Linkerd discovers services based on the :authority or Host header. This allows Linkerd to understand what service a request is destined for without being dependent on DNS or IPs.
+> When it comes to ingress, most controllers do not rewrite the incoming header (example.com) to the internal service name (example.default.svc.cluster.local) by default.
+This means we need to make some changes to the ingress rule. If you are using nginx add the following annotation to it:
+```
+nginx.ingress.kubernetes.io/configuration-snippet: |
+  proxy_set_header l5d-dst-override gateway.openfaas.svc.cluster.local:8080;
+  proxy_hide_header l5d-remote-ip;
+  proxy_hide_header l5d-server-id;
+```
+For the rest of the ingress controllers [check out Linkerd's documentation](https://linkerd.io/2/tasks/using-ingress/)
+
 
 ## Dashboards
 Linkerd 2 comes with a very helpful and detailed dashboards that allow us to look into the traffic going through our cluster. To open the dashboard run:
