@@ -36,8 +36,6 @@ If you already had functions deployed in your namespace you can run the injectio
 $ kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
-**Caveat for Nginx**: It is not possible to rewrite the header in this way for the default backend. Because of this, if you inject Linkerd into your Nginx ingress controller’s pod, the default backend will not be usable.
-
 #### Linkerd 2 and the Ingress Controller
 If you are using an ingress controller you need to do an extra step(if you are using a service type LoadBalancer for your gateway you can skip this).
 First we need to inject the linkerd proxy into the nginx ingress controller:
@@ -56,6 +54,7 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
 ```
 For the rest of the ingress controllers [check out Linkerd's documentation](https://linkerd.io/2/tasks/using-ingress/)
 
+**Caveat for Nginx**: It is not possible to rewrite the header in this way for the default backend. Because of this, if you inject Linkerd into your Nginx ingress controller’s pod, the default backend will not be usable.
 
 ## Dashboards
 Linkerd 2 comes with a very helpful and detailed dashboards that allow us to look into the traffic going through our cluster. To open the dashboard run:
