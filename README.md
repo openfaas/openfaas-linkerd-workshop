@@ -45,6 +45,7 @@ $ kubectl -n default get deploy <name of your ingress controller> -o yaml | link
 Once your ingress controller is injected you will notice that you cannot access your gateway. This is because of the following:
 > Linkerd discovers services based on the :authority or Host header. This allows Linkerd to understand what service a request is destined for without being dependent on DNS or IPs.
 > When it comes to ingress, most controllers do not rewrite the incoming header (example.com) to the internal service name (example.default.svc.cluster.local) by default.
+
 This means we need to make some changes to the ingress rule. If you are using nginx add the following annotation to it:
 ```
 nginx.ingress.kubernetes.io/configuration-snippet: |
