@@ -36,6 +36,8 @@ If you already had functions deployed in your namespace you can run the injectio
 $ kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
+**Caveat for Nginx**: It is not possible to rewrite the header in this way for the default backend. Because of this, if you inject Linkerd into your Nginx ingress controller’s pod, the default backend will not be usable.
+
 #### Linkerd 2 and the Ingress Controller
 If you are using an ingress controller you need to do an extra step(if you are using a service type LoadBalancer for your gateway you can skip this).
 First we need to inject the linkerd proxy into the nginx ingress controller:
