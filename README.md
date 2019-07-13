@@ -164,7 +164,7 @@ We need to create a dummy `Deployment` and `Service`, also called a `root` Servi
 We can do this by deploying another function, it will echo `root` so that we can see when the `TrafficSplit` is working and when it is not.
 
 ```sh
-faas-cli deploy --image functions/alpine:latest --fprocess="echo root"  -g 178.128.42.184:31112 --name echo
+faas-cli deploy --image functions/alpine:latest --fprocess="echo root" --name echo
 ```
 
 * Test each endpoint
