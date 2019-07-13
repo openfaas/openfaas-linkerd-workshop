@@ -157,31 +157,32 @@ faas-cli deploy --image functions/alpine:latest --fprocess="echo green" --name e
 faas-cli deploy --image functions/alpine:latest --fprocess="echo blue" --name echo-blue
 ```
 
-* Create a root service:
+We need to create a dummy `Deployment` and `Service`, also called a `root` Service.
 
-> Use `kubectl apply -f - ` then paste in the example, followed by `Ctrl+D`
+* Create a root `Service` and `Deployment`:
 
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    prometheus.io.scrape: "false"
-  creationTimestamp: null
-  name: echo
-  namespace: openfaas-fn
-spec:
-  ports:
-  - name: http
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    faas_function: echo
-  type: ClusterIP
+We can do this by deploying another function, it will echo `root` so that we can see when the `TrafficSplit` is working and when it is not.
+
+```sh
+faas-cli deploy --image functions/alpine:latest --fprocess="echo root"  -g 178.128.42.184:31112 --name echo
 ```
 
+* Test each endpoint
+
+```sh
+# curl 127.0.0.1:31112/function/echo-green
+green
+# curl 127.0.0.1:31112/function/echo-blue
+blue
+# curl 127.0.0.1:31112/function/echo
+root
+```
+
+You'll see that `echo` returns `root` as its message, that's because the `TrafficSplit` is not yet connected.
+
 * Deploy the split
+
+> Use `kubectl apply -f - ` then paste in the example, followed by `Ctrl+D`
 
 ```yaml
 apiVersion: split.smi-spec.io/v1alpha1
@@ -200,16 +201,7 @@ spec:
     weight: 900m
 ```
 
-Let's try: 90% green, 10% blue
-
-Test each endpoint
-
-```sh
-# curl 127.0.0.1:31112/function/echo-green
-green
-# curl 127.0.0.1:31112/function/echo-blue
-blue
-```
+Let's try an initial splt of: 90% green, 10% blue.
 
 Test the canary:
 
@@ -235,21 +227,21 @@ Prove the TrafficSplit is working:
 kubectl delete -n openfaas-fn trafficsplit.split.smi-spec.io --all
 
 # for i in {0..10}; do  curl 127.0.0.1:31112/function/echo; done
-green
-green
-green
-green
-green
-green
-green
-green
-green
-green
-green
+root
+root
+root
+root
+root
+root
+root
+root
+root
+root
+root
 # 
 ```
 
-Now we have no split.
+Now we have no split and we're hitting the dummy root `Deployment`.
 
 Try a 50/50 split:
 
