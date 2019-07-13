@@ -11,7 +11,6 @@ Guide for OpenFaaS / Linkerd2
 
 One of the goals for Linkerd 2 is that *it just works*. Is an operator-friendly project just like OpenFaaS! :smile:
 
-
 Today we will install Linkerd to our Kubernetes cluster so that the communication between the Gateway and the Functions goes through the linkerd proxy. These will give us encrypted communication, retries, timeouts and more.
 
 Be sure to have a working OpenFaaS installation on top of a Kubernetes cluster.
@@ -22,7 +21,22 @@ kubectl create clusterrolebinding cluster-admin-binding-$USER \
     --clusterrole=cluster-admin --user=$(gcloud config get-value account)
 ```
 
-## Installing Linkerd 2
+> Note: Linkerd 2.4 installation instructions changed, see the end of the guide for more.
+
+## Need a *lab environment*?
+
+Try the brand-new sandbox environment that only needs a single DigitalOcean VM:
+
+* [openfaas-incubator/workshop-vscode](https://github.com/openfaas-incubator/workshop-vscode)
+
+1. A Virtual Machine will be provisioned with a cloud hosting provider using cloudinit
+2. Kubernetes with k3s will be installed on the VM
+3. OpenFaaS will be installed into the k3s cluster
+4. A Docker image will be run which provides VSCode via a web-browser
+5. The login password for VSCode will be obtained via ssh
+6. VSCode can now be used in web-browser via your VM's IP. The self-signed certificate will provide encryption and the login password will protect against tampering.
+
+## Install Linkerd 2
 
 Installing Linkerd is easy. First, you will install the CLI (command-line interface) onto your local machine. Using this CLI, you’ll install the Linkerd control plane into your Kubernetes cluster. Finally, you’ll “mesh” one or more services by adding the data plane proxies. (See the [Architecture page](https://linkerd.io/2/reference/architecture/) for details.)
 
@@ -132,3 +146,148 @@ kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
 kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 
 ```
+
+#### Try traffic splitting for Canary deployments
+
+* Deploy to versions of a function
+
+```sh
+faas-cli deploy --image functions/alpine:latest --fprocess="echo green" --name echo-green
+faas-cli deploy --image functions/alpine:latest --fprocess="echo blue" --name echo-blue
+```
+
+* Create a root service:
+
+> Use `kubectl apply -f - ` then paste in the example, followed by `Ctrl+D`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io.scrape: "false"
+  creationTimestamp: null
+  name: echo
+  namespace: openfaas-fn
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    faas_function: echo
+  type: ClusterIP
+```
+
+* Deploy the split
+
+```yaml
+apiVersion: split.smi-spec.io/v1alpha1
+kind: TrafficSplit
+metadata:
+  name: function-split
+  namespace: openfaas-fn
+spec:
+  # The root service that clients use to connect to the destination application.
+  service: echo
+  # Services inside the namespace with their own selectors, endpoints and configuration.
+  backends:
+  - service: echo-blue
+    weight: 100m
+  - service: echo-green
+    weight: 900m
+```
+
+Let's try: 90% green, 10% blue
+
+Test each endpoint
+
+```sh
+# curl 127.0.0.1:31112/function/echo-green
+green
+# curl 127.0.0.1:31112/function/echo-blue
+blue
+```
+
+Test the canary:
+
+```sh
+# for i in {0..10}; do  curl 127.0.0.1:31112/function/echo; done
+green
+green
+blue
+green
+green
+blue
+green
+green
+green
+green
+green
+# 
+```
+
+Prove the TrafficSplit is working:
+
+```
+kubectl delete -n openfaas-fn trafficsplit.split.smi-spec.io --all
+
+# for i in {0..10}; do  curl 127.0.0.1:31112/function/echo; done
+green
+green
+green
+green
+green
+green
+green
+green
+green
+green
+green
+# 
+```
+
+Now we have no split.
+
+Try a 50/50 split:
+
+```yaml
+apiVersion: split.smi-spec.io/v1alpha1
+kind: TrafficSplit
+metadata:
+  name: function-split
+  namespace: openfaas-fn
+spec:
+  # The root service that clients use to connect to the destination application.
+  service: echo
+  # Services inside the namespace with their own selectors, endpoints and configuration.
+  backends:
+  - service: echo-blue
+    weight: 500m
+  - service: echo-green
+    weight: 500m
+```
+
+And now we see:
+
+```sh
+# for i in {0..10}; do  curl 127.0.0.1:31112/function/echo; done
+green
+blue
+green
+blue
+blue
+green
+green
+green
+blue
+blue
+blue
+#
+```
+
+Got questions? Jump onto Slack
+
+* [Linkerd Slack](https://slack.linkerd.io/)
+* [OpenFaaS Slack](https://slack.openfaas.io/)
