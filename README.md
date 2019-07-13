@@ -144,12 +144,13 @@ kubectl -n openfaas get deploy gateway -o yaml | linkerd inject --skip-outbound-
 kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
 
 kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
-
 ```
 
 #### Try traffic splitting for Canary deployments
 
-* Deploy to versions of a function
+As of 2.4, [Linkerd supports](https://linkerd.io/2/features/traffic-split/) [TrafficSplit](https://github.com/deislabs/smi-spec/blob/master/traffic-split.md) from the [SMI spec](https://smi-spec.io).
+
+* Deploy two versions of a function
 
 ```sh
 faas-cli deploy --image functions/alpine:latest --fprocess="echo green" --name echo-green
