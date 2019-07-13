@@ -104,3 +104,31 @@ Traffic going from the ingress controller to the gateway and finally from the ga
 ![gateway-to-function-traffic](/docs/gateway-dashboard-with-ingress.png)
 Incoming traffic to a function:
 ![incoming-traffic-to-a-function](/docs/list-function-linkerd-request.png)
+
+
+### Amendments for 2.4
+
+These instructions work for Linkerd 2.4 and newer.
+
+```bash
+curl -sL https://run.linkerd.io/install| sh
+
+export PATH=$PATH:$HOME/.linkerd2/bin
+
+linkerd version
+
+linkerd check
+
+linkerd install config | kubectl apply -f -
+
+linkerd install control-plane | kubectl apply -f -
+
+linkerd check
+
+kubectl -n openfaas get deploy gateway -o yaml | linkerd inject --skip-outbound-ports=4222 - | kubectl apply -f -
+
+kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
+
+kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
+
+```
