@@ -1,5 +1,5 @@
 Guide for OpenFaaS / Linkerd2
-===
+=============================================
 
 [Linkerd 2](https://linkerd.io/2/) is a service mesh that provides features such as:
 * Automatic TLS between pods,
@@ -284,3 +284,8 @@ Got questions? Jump onto Slack
 
 * [Linkerd Slack](https://slack.linkerd.io/)
 * [OpenFaaS Slack](https://slack.openfaas.io/)
+
+## Contributors & acknowledgements
+
+* Matias Pan
+* Alex Ellis
