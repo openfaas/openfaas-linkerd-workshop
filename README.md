@@ -31,6 +31,8 @@ At present Linkerd2 only supports mTLS for HTTP traffic, which means that asynch
 
 A work-around may be to deploy without NATS Streaming, or to only use synchronous invocations for sensitive data.
 
+See also: [automatic mTLS in Linkerd2](https://linkerd.io/2/features/automatic-mtls/)
+
 ## Need a *lab environment*?
 
 Try the brand-new sandbox environment that only needs a single DigitalOcean VM:
