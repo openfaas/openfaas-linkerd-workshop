@@ -2,12 +2,14 @@ Guide for OpenFaaS / Linkerd2
 =============================================
 
 [Linkerd 2](https://linkerd.io/2/) is a service mesh that provides features such as:
-* Automatic TLS between pods,
+* Mutual TLS between gateway, ingress and functions *
 * Dashboard and pre-configured grafana dashboards with prometheus metrics,
 * Works along-side ingress controllers,
 * Retries and timeouts,
 * Telemetry and monitoring,
 * A lot more! [Checkout the documentation](https://linkerd.io/2/features/)
+
+> Note: Linkerd 2.4 installation instructions changed, see the end of the guide for more.
 
 One of the goals for Linkerd 2 is that *it just works*. Is an operator-friendly project just like OpenFaaS! :smile:
 
@@ -21,7 +23,13 @@ kubectl create clusterrolebinding cluster-admin-binding-$USER \
     --clusterrole=cluster-admin --user=$(gcloud config get-value account)
 ```
 
-> Note: Linkerd 2.4 installation instructions changed, see the end of the guide for more.
+### Caveats
+
+A note on mTLS. Linkerd2 can currently only encrypt HTTP traffic which means all traffic between your IngressController, the API Gateway and your functions will be encrypted.
+
+At present Linkerd2 only supports mTLS for HTTP traffic, which means that asynchronous requests published with NATS Streaming cannot be encrypted. mTLS for TCP is on the roadmap for Linkerd2 and will enable encryption for NATS Streaming.
+
+A work-around may be to deploy without NATS Streaming, or to only use synchronous invocations for sensitive data.
 
 ## Need a *lab environment*?
 
