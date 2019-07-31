@@ -144,9 +144,9 @@ Once your ingress controller is injected you will notice that you cannot access 
 
 * We need to re-write the external DNS name, to the internal name known by Linkerd
 
-For Nginx add the following annotation to the ingress definition for your OpenFaaS gateway:
+For Nginx add the following `annotation` to the ingress definition for your OpenFaaS gateway:
 
-```
+```yaml
 nginx.ingress.kubernetes.io/configuration-snippet: |
   proxy_set_header l5d-dst-override gateway.openfaas.svc.cluster.local:8080;
   proxy_hide_header l5d-remote-ip;
@@ -194,6 +194,12 @@ You can now view inbound / outbound metrics for that function including RPS, TCP
 > I am using `hey` to generate load and can see a bump in throughput after each auto-scaling event has fired.
 
 To generate some load, see the auto-scaling guide in the [OpenFaaS Workshop Lab 9](https://github.com/openfaas/workshop/blob/master/lab9.md). 
+
+### Disable meshing for a function
+
+```
+faas-cli store deploy figlet --name figlet-no-mesh --annotation "linkerd.io/inject=disabled"
+```
 
 ### Try traffic splitting for blue/green and canary deployments
 
