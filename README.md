@@ -128,6 +128,8 @@ kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f 
 
 If you're using a `LoadBalancer` you can skip this step, but if you're using a `IngressController`, then we need to run some additional commands to mesh the traffic end-to-end.
 
+> See also: [Install Nginx Ingress and cert-manager for OpenFaaS](https://docs.openfaas.com/reference/ssl/kubernetes-with-cert-manager/)
+
 First inject the linkerd proxy into the `IngressController`, in our example we will use [Nginx for Ingress](https://github.com/kubernetes/ingress-nginx).
 
 ```bash
