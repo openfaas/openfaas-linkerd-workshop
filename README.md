@@ -177,6 +177,22 @@ Incoming traffic to a function:
 
 > Note: If you are running `kubectl` inside a VM or on a remote cluster, then you can use SSH port-forwarding to forward the dashboard back to your local machine.
 
+### Access Grafana
+
+You can also access a Grafana dashboard, which is useful for debugging and inspecting individual functions.
+
+Find a meshed namespace, such as "openfaas-fn" and then click on the right hand side for that Deployment:
+
+![](./docs/select-grafana.png)
+
+You can now view inbound / outbound metrics for that function including RPS, TCP details, and such.
+
+![](./docs/view-grafana.png)
+
+> I am using `hey` to generate load and can see a bump in throughput after each auto-scaling event has fired.
+
+To generate some load, see the auto-scaling guide in the [OpenFaaS Workshop Lab 9](https://github.com/openfaas/workshop/blob/master/lab9.md). 
+
 ### Try traffic splitting for blue/green and canary deployments
 
 As of 2.4, [Linkerd supports](https://linkerd.io/2/features/traffic-split/) [TrafficSplit](https://github.com/deislabs/smi-spec/blob/master/traffic-split.md) from the [SMI spec](https://smi-spec.io).
