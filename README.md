@@ -1,7 +1,7 @@
-Guide for OpenFaaS / Linkerd2
-=============================================
+Guide for Serverless on Kubernetes with OpenFaaS & Linkerd2
+===============================================================
 
-[Linkerd 2](https://linkerd.io/2/) is a service mesh that provides features such as:
+[Linkerd2](https://linkerd.io/2/) is a service mesh that provides features such as:
 * Mutual TLS between gateway, ingress and functions *
 * Dashboard and pre-configured grafana dashboards with prometheus metrics,
 * Works along-side ingress controllers,
@@ -100,7 +100,7 @@ This may take a minute or two. We can validate that everything's happening corre
 linkerd check
 ```
 
-### Add Linkerd 2 to OpenFaaS
+### Step 4: Add Linkerd 2 to OpenFaaS
 
 The term "injection" refers to how Linkerd will "mesh" function by adding an additional proxy container to each Pod.
 
@@ -110,7 +110,15 @@ Inject Linkerd to the OpenFaaS Gateway to mesh calls from the gateway to functio
 kubectl -n openfaas get deploy gateway -o yaml | linkerd inject --skip-outbound-ports=4222 - | kubectl apply -f -
 ```
 
-This command injects the linkerd proxy and ignores the port `4222` for outbound traffic. Currently linkerd2 only supporst HTTP traffic and port `4222` uses TCP traffic for `NATS`.
+This command injects the linkerd proxy and ignores the port `4222` for outbound traffic. Currently linkerd2 only supports HTTP traffic and port `4222` uses TCP traffic for `NATS`.
+
+You can also mesh other services which use HTTP rather than TCP.
+
+```bash
+kubectl -n openfaas get deploy/basic-auth-plugin -o yaml | linkerd inject - | kubectl apply -f -
+kubectl -n openfaas get deploy/faas-idler -o yaml | linkerd inject - | kubectl apply -f -
+kubectl -n openfaas get deploy/queue-worker -o yaml | linkerd inject  --skip-outbound-ports=4222 - | kubectl apply -f -
+```
 
 Now enable automatic injection on the `openfaas-fn` namespace, Linkerd will now inject the proxy to each function Pod that we create. If we are using mutual TLS (enabled by default), we now have encryption between the gateway and each function.
 
@@ -124,7 +132,7 @@ If you already had functions deployed in your namespace you can run the injectio
 kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
-### Linkerd2 and your `IngressController`
+### Step 5: (optional) Configure your `IngressController`
 
 If you're using a `LoadBalancer` you can skip this step, but if you're using a `IngressController`, then we need to run some additional commands to mesh the traffic end-to-end.
 
@@ -355,19 +363,23 @@ linkerd install control-plane | kubectl apply -f -
 linkerd check
 
 kubectl -n openfaas get deploy gateway -o yaml | linkerd inject --skip-outbound-ports=4222 - | kubectl apply -f -
+kubectl -n openfaas get deploy/basic-auth-plugin -o yaml | linkerd inject - | kubectl apply -f -
+kubectl -n openfaas get deploy/faas-idler -o yaml | linkerd inject - | kubectl apply -f -
+kubectl -n openfaas get deploy/queue-worker -o yaml | linkerd inject  --skip-outbound-ports=4222 - | kubectl apply -f -
 
 kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
 
 kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
-
 ## Contributors & acknowledgements
 
-Got questions? Jump onto Slack
+Got questions? Jump onto Slack:
 
 * [Linkerd Slack](https://slack.linkerd.io/)
 * [OpenFaaS Slack](https://slack.openfaas.io/)
 
-* Matias Pan
+Authors:
+
 * Alex Ellis
+* Matias Pan
