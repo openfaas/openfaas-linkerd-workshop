@@ -21,6 +21,10 @@ kubectl create clusterrolebinding cluster-admin-binding-$USER \
     --clusterrole=cluster-admin --user=$(gcloud config get-value account)
 ```
 
+### Reference architecture / examples
+
+![](/docs/reference-architecture.png)
+
 ### Caveats
 
 A note on mTLS. Linkerd2 can currently only encrypt HTTP traffic which means all traffic between your IngressController, the API Gateway and your functions will be encrypted.
