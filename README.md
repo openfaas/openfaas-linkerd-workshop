@@ -376,6 +376,22 @@ kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
 kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
 ```
 
+## OpenFaaS Cloud
+
+* Update Nginx
+
+Run: `kubectl edit ingress -n openfaas openfaas-ingress`
+
+Then add this annotation:
+
+```yaml
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header l5d-dst-override edge-router.openfaas.svc.cluster.local:8080;
+      proxy_hide_header l5d-remote-ip;
+      proxy_hide_header l5d-server-id;
+```
+
 ## Contributors & acknowledgements
 
 Got questions? Jump onto Slack:
