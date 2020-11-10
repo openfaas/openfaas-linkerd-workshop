@@ -13,9 +13,8 @@ One of the goals for Linkerd2 is that *it just works*. Is an operator-friendly p
 
 Today we will install Linkerd to our Kubernetes cluster so that the communication between the Gateway and the Functions goes through the linkerd proxy. These will give us encrypted communication, retries, timeouts and more.
 
-Be sure to have a working OpenFaaS installation on top of a Kubernetes cluster.
-
 If you are running on a GKE cluster with RBAC enabled you need to grant a cluster role of cluster-admin to your Google account:
+
 ```bash
 kubectl create clusterrolebinding cluster-admin-binding-$USER \
     --clusterrole=cluster-admin --user=$(gcloud config get-value account)
@@ -48,29 +47,38 @@ Try the brand-new sandbox environment that only needs a single DigitalOcean VM:
 5. The login password for VSCode will be obtained via ssh
 6. VSCode can now be used in web-browser via your VM's IP. The self-signed certificate will provide encryption and the login password will protect against tampering.
 
+## Install pre-reqs
+
+The OpenFaaS helm chart can be installed most simply with our `arkade` CLI, it can also be used to install `linkerd`, `kubectl` and `faas-cli.
+
+```bash
+curl -sLS https://dl.get-arkade.dev | sh
+sudo mv arkade /usr/local/bin/
+```
+
+Get the CLIs we'll need for the tutorial:
+
+```bash
+arkade get linkerd
+arkade get kubectl
+arkade get faas-cli
+```
+
+Install OpenFaaS:
+
+```bash
+arkade install openfaas
+```
+
 ## Install Linkerd 2
 
 Installing Linkerd is easy. First, you will install the CLI (command-line interface) onto your local machine. Using this CLI, you’ll install the Linkerd control plane into your Kubernetes cluster. Finally, you’ll “mesh” one or more services by adding the data plane proxies. (See the [Architecture page](https://linkerd.io/2/reference/architecture/) for details.)
 
-> Note: these steps are for Linkerd 2.4, earlier or newer versions may need some alterations to the commands, but the principles should not vary much.
+> Note: these steps are for Linkerd 2.9, earlier or newer versions may need some alterations to the commands, but the principles should not be too different. Pull requests with tested changes are welcome.
 
 ### Step 1: Install the CLI
 
-Install the `linkerd` CLI:
-
-```bash
-curl -sL https://run.linkerd.io/install | sh
-```
-
-Add `linkerd` to your path:
-
-```bash
-export PATH=$PATH:$HOME/.linkerd2/bin
-```
-
-> Note: you should add this line to your `$HOME/.bash_rc` or `$HOME/.bash_profile` file.
-
-Check the CLI:
+Check the CLI version of Linkerd:
 
 ```bash
 linkerd version
@@ -85,6 +93,14 @@ linkerd check --pre
 ```
 
 ### Step 3: Install Linkerd 2 onto the cluster
+
+Use arkade:
+
+```bash
+arkade install linkerd
+```
+
+Or run each step manually:
 
 Setup Linkerd's config step:
 
@@ -138,11 +154,31 @@ kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f 
 
 ### Step 5: (optional) Configure your `IngressController`
 
-If you're using a `LoadBalancer` you can skip this step, but if you're using a `IngressController`, then we need to run some additional commands to mesh the traffic end-to-end.
+If you're using a `IngressController`, then we need to run some additional commands to mesh the traffic end-to-end.
 
-> See also: [Install Nginx Ingress and cert-manager for OpenFaaS](https://docs.openfaas.com/reference/ssl/kubernetes-with-cert-manager/)
+Install ingress-nginx:
 
-First inject the linkerd proxy into the `IngressController`, in our example we will use [Nginx for Ingress](https://github.com/kubernetes/ingress-nginx).
+```bash
+arkade install ingress-nginx
+```
+
+Install cert-manager to obtain TLS certificates:
+
+```bash
+arkade install ingress-nginx
+```
+
+You'll need to create a DNS A or CNAME record to the "EXTERNAL-IP" shown under `kubectl get svc` for ingress-nginx, make sure that it points at `openfaas.example.com` (changing `example.com` to your own domain).
+
+Deploy an Ingress definition for OpenFaaS:
+
+```bash
+arkade install openfaas-ingress \
+ --email webmaster@domain.com \
+ --domain openfaas.example.com
+```
+
+Now inject the linkerd proxy into the `IngressController`:
 
 ```bash
 kubectl get deploy/<name of your ingress controller> -o yaml | linkerd inject - | kubectl apply -f -
@@ -169,13 +205,15 @@ For alternative ingress controllers, see [Linkerd's documentation on using ingre
 
 > A note on the default backend: it is not possible to rewrite the header in this way for the default backend. Because of this, if you inject Linkerd into your Nginx ingress controller's pod, the default backend will not be usable.
 
+If you are running your cluster on-premises, on your laptop, or in a private network where you cannot obtain a LoadBalancer, consider using the [inlets-operator](https://github.com/inlets/inlets-operator).
+
 ## Use Linkerd
 
 Linkerd has a rich set of features which are growing at a steady pace. We will only cover a small sub-set in this tutorial. Contributions are welcome.
 
 ### Access your dashboard
 
-Linkerd 2 comes with a very helpful and detailed dashboards that allow us to look into the traffic going through our cluster. To open the dashboard run:
+Linkerd comes with a very helpful and detailed dashboards that allow us to look into the traffic going through our cluster. To open the dashboard run:
 
 ```bash
 linkerd dashboard &
@@ -215,7 +253,7 @@ faas-cli store deploy figlet --name figlet-no-mesh --annotation "linkerd.io/inje
 
 ### Try traffic splitting for blue/green and canary deployments
 
-As of 2.4, [Linkerd supports](https://linkerd.io/2/features/traffic-split/) [TrafficSplit](https://github.com/deislabs/smi-spec/blob/master/traffic-split.md) from the [SMI spec](https://smi-spec.io).
+Linkerd 2.4 added the [traffic-splitting feature](https://linkerd.io/2/features/traffic-split/) and the [TrafficSplit](https://github.com/deislabs/smi-spec/blob/master/traffic-split.md) object from the [SMI spec](https://smi-spec.io).
 
 * Deploy two versions of a function
 
@@ -347,59 +385,9 @@ blue
 #
 ```
 
-### Quick installation
+## Next steps
 
-These instructions work for Linkerd 2.4.
+Connect with the project communities:
 
-```bash
-curl -sL https://run.linkerd.io/install| sh
-
-export PATH=$PATH:$HOME/.linkerd2/bin
-
-linkerd version
-
-linkerd check
-
-linkerd install config | kubectl apply -f -
-
-linkerd install control-plane | kubectl apply -f -
-
-linkerd check
-
-kubectl -n openfaas get deploy gateway -o yaml | linkerd inject --skip-outbound-ports=4222 - | kubectl apply -f -
-kubectl -n openfaas get deploy/basic-auth-plugin -o yaml | linkerd inject - | kubectl apply -f -
-kubectl -n openfaas get deploy/faas-idler -o yaml | linkerd inject - | kubectl apply -f -
-kubectl -n openfaas get deploy/queue-worker -o yaml | linkerd inject  --skip-outbound-ports=4222 - | kubectl apply -f -
-
-kubectl annotate namespace openfaas-fn linkerd.io/inject=enabled
-
-kubectl -n openfaas-fn get deploy -o yaml | linkerd inject - | kubectl apply -f -
-```
-
-## OpenFaaS Cloud
-
-* Update Nginx
-
-Run: `kubectl edit ingress -n openfaas openfaas-ingress`
-
-Then add this annotation:
-
-```yaml
-  annotations:
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      proxy_set_header l5d-dst-override edge-router.openfaas.svc.cluster.local:8080;
-      proxy_hide_header l5d-remote-ip;
-      proxy_hide_header l5d-server-id;
-```
-
-## Contributors & acknowledgements
-
-Got questions? Jump onto Slack:
-
-* [Linkerd Slack](https://slack.linkerd.io/)
 * [OpenFaaS Slack](https://slack.openfaas.io/)
-
-Authors:
-
-* Alex Ellis
-* Matias Pan
+* [Linkerd Slack](https://slack.linkerd.io/)
