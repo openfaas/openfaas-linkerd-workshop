@@ -59,9 +59,14 @@ sudo mv arkade /usr/local/bin/
 Get the CLIs we'll need for the tutorial:
 
 ```bash
-arkade get linkerd
+arkade get linkerd2 --version stable-2.9.0
 arkade get kubectl
 arkade get faas-cli
+
+export PATH=$PATH:$HOME/.arkade/bin/
+
+# Make an alias as "linkerd"
+ln -s $HOME/.arkade/bin/linkerd2 $HOME/.arkade/bin/linkerd
 ```
 
 Install OpenFaaS:
@@ -72,7 +77,9 @@ arkade install openfaas
 
 ## Install Linkerd 2
 
-Installing Linkerd is easy. First, you will install the CLI (command-line interface) onto your local machine. Using this CLI, you’ll install the Linkerd control plane into your Kubernetes cluster. Finally, you’ll “mesh” one or more services by adding the data plane proxies. (See the [Architecture page](https://linkerd.io/2/reference/architecture/) for details.)
+Installing Linkerd is easy. First, you will install the CLI (command-line interface) onto your local machine. Using this CLI, you’ll install the Linkerd control plane into your Kubernetes cluster. Finally, you’ll “mesh” one or more services by adding the data plane proxies.
+
+See the [Architecture page](https://linkerd.io/2/reference/architecture/) for details.
 
 > Note: these steps are for Linkerd 2.9, earlier or newer versions may need some alterations to the commands, but the principles should not be too different. Pull requests with tested changes are welcome.
 
