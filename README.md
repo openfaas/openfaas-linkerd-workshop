@@ -72,8 +72,11 @@ ln -s $HOME/.arkade/bin/linkerd2 $HOME/.arkade/bin/linkerd
 Install OpenFaaS:
 
 ```bash
-arkade install openfaas
+arkade install openfaas \
+  --set gateway.directFunctions=true
 ```
+
+The `directFunctions=true` changes the OpenFaaS gateway invocation behaviour from using the faas-netes side-car, and its own list of endpoints, to using the service name, where Linkerd can then take over the resolution of a function's pod.
 
 ## Install Linkerd 2
 
@@ -255,7 +258,9 @@ To generate some load, see the auto-scaling guide in the [OpenFaaS Workshop Lab 
 ### Disable meshing for a function
 
 ```
-faas-cli store deploy figlet --name figlet-no-mesh --annotation "linkerd.io/inject=disabled"
+faas-cli store deploy figlet \
+  --name figlet-no-mesh \
+  --annotation "linkerd.io/inject=disabled"
 ```
 
 ### Try traffic splitting for blue/green and canary deployments
@@ -265,8 +270,13 @@ Linkerd 2.4 added the [traffic-splitting feature](https://linkerd.io/2/features/
 * Deploy two versions of a function
 
 ```bash
-faas-cli deploy --image functions/alpine:latest --fprocess="echo green" --name echo-green
-faas-cli deploy --image functions/alpine:latest --fprocess="echo blue" --name echo-blue
+faas-cli deploy --image functions/alpine:latest \
+  --fprocess="echo green" \
+  --name echo-green
+
+faas-cli deploy --image functions/alpine:latest \
+  --fprocess="echo blue" \
+  --name echo-blue
 ```
 
 We need to create a dummy `Deployment` and `Service`, also called a `root` Service.
@@ -276,7 +286,9 @@ We need to create a dummy `Deployment` and `Service`, also called a `root` Servi
 We can do this by deploying another function, it will echo `root` so that we can see when the `TrafficSplit` is working and when it is not.
 
 ```bash
-faas-cli deploy --image functions/alpine:latest --fprocess="echo root" --name echo
+faas-cli deploy --image functions/alpine:latest \
+  --fprocess="echo root" \
+  --name echo
 ```
 
 * Test each endpoint
@@ -284,8 +296,10 @@ faas-cli deploy --image functions/alpine:latest --fprocess="echo root" --name ec
 ```bash
 # curl 127.0.0.1:31112/function/echo-green
 green
+
 # curl 127.0.0.1:31112/function/echo-blue
 blue
+
 # curl 127.0.0.1:31112/function/echo
 root
 ```
@@ -398,3 +412,4 @@ Connect with the project communities:
 
 * [OpenFaaS Slack](https://slack.openfaas.io/)
 * [Linkerd Slack](https://slack.linkerd.io/)
+
